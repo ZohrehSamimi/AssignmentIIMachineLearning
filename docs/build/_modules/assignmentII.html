@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>assignmentII &#8212; AssignmentII_MachineLearning 1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=12dfc556" />
+    <script src="../_static/documentation_options.js?v=29a6c3e3"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for assignmentII</h1><div class="highlight"><pre>
+<span></span><span class="sd">&#39;&#39;&#39;</span>
+
+<span class="sd">DBPedia_14 Text Classification Project</span>
+
+<span class="sd">This script loads a subset of the DBPedia_14 dataset, processes the text data, and trains</span>
+<span class="sd">two classification models: Logistic Regression and Support Vector Machine (SVM).</span>
+<span class="sd">Hyperparameter tuning is performed using GridSearchCV, and model evaluation metrics are computed.</span>
+
+<span class="sd">Modules:</span>
+<span class="sd">- load_and_preprocess_data: Loads and preprocesses the dataset.</span>
+<span class="sd">- vectorize_data: Converts text data into numerical feature vectors using TF-IDF.</span>
+<span class="sd">- train_model: Trains a given classification model.</span>
+<span class="sd">- evaluate_model: Evaluates a trained model using classification metrics and confusion matrix.</span>
+<span class="sd">- main: Orchestrates the workflow by calling the necessary functions.</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">- numpy</span>
+<span class="sd">- pandas</span>
+<span class="sd">- sklearn</span>
+<span class="sd">- datasets</span>
+<span class="sd">- matplotlib</span>
+<span class="sd">- seaborn</span>
+<span class="sd">&#39;&#39;&#39;</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">datasets</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
+<span class="kn">from</span> <span class="nn">datasets</span> <span class="kn">import</span> <span class="n">load_dataset</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span><span class="p">,</span> <span class="n">GridSearchCV</span>
+<span class="kn">from</span> <span class="nn">sklearn.feature_extraction.text</span> <span class="kn">import</span> <span class="n">TfidfVectorizer</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.svm</span> <span class="kn">import</span> <span class="n">SVC</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">accuracy_score</span><span class="p">,</span> <span class="n">precision_score</span><span class="p">,</span> <span class="n">recall_score</span><span class="p">,</span> <span class="n">f1_score</span><span class="p">,</span> <span class="n">classification_report</span><span class="p">,</span> <span class="n">confusion_matrix</span>
+
+<div class="viewcode-block" id="load_and_preprocess_data">
+<a class="viewcode-back" href="../modules.html#assignmentII.load_and_preprocess_data">[docs]</a>
+<span class="k">def</span> <span class="nf">load_and_preprocess_data</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Load the DBPedia_14 dataset and preprocess it.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: Train and test datasets as pandas DataFrames.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">dataset</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;dbpedia_14&quot;</span><span class="p">)</span>
+    <span class="n">train_ds</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;train&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">5000</span><span class="p">))</span>
+    <span class="n">test_ds</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">[</span><span class="s2">&quot;test&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">2000</span><span class="p">))</span>
+    
+    <span class="n">train_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">train_ds</span><span class="p">)</span>
+    <span class="n">test_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">test_ds</span><span class="p">)</span>
+    
+    <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">reconfigure</span><span class="p">(</span><span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">train_df</span><span class="p">,</span> <span class="n">test_df</span></div>
+
+
+<div class="viewcode-block" id="vectorize_data">
+<a class="viewcode-back" href="../modules.html#assignmentII.vectorize_data">[docs]</a>
+<span class="k">def</span> <span class="nf">vectorize_data</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_dev</span><span class="p">,</span> <span class="n">X_test</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">    Convert text data into numerical feature vectors using TF-IDF.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            X_train (list): Training data.</span>
+<span class="sd">            X_dev (list): Development data.</span>
+<span class="sd">            X_test (list): Test data.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: TF-IDF vectorizer and vectorized data for training, development, and test sets.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">vectorizer</span> <span class="o">=</span> <span class="n">TfidfVectorizer</span><span class="p">(</span><span class="n">max_features</span><span class="o">=</span><span class="mi">3000</span><span class="p">)</span>
+    <span class="n">X_train_vectorized</span> <span class="o">=</span> <span class="n">vectorizer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+    <span class="n">X_dev_vectorized</span> <span class="o">=</span> <span class="n">vectorizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X_dev</span><span class="p">)</span>
+    <span class="n">X_test_vectorized</span> <span class="o">=</span> <span class="n">vectorizer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">vectorizer</span><span class="p">,</span> <span class="n">X_train_vectorized</span><span class="p">,</span> <span class="n">X_dev_vectorized</span><span class="p">,</span> <span class="n">X_test_vectorized</span></div>
+
+
+<div class="viewcode-block" id="train_model">
+<a class="viewcode-back" href="../modules.html#assignmentII.train_model">[docs]</a>
+<span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Train a given classification model.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            model: Classification model.</span>
+<span class="sd">            X_train (array): Training data.</span>
+<span class="sd">            y_train (array): Training labels.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            model: Trained model.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span></div>
+
+
+<div class="viewcode-block" id="evaluate_model">
+<a class="viewcode-back" href="../modules.html#assignmentII.evaluate_model">[docs]</a>
+<span class="k">def</span> <span class="nf">evaluate_model</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="n">model_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39; Evaluate a trained model using classification metrics and confusion matrix.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            model: Trained model.</span>
+<span class="sd">            X_test (array): Test data.</span>
+<span class="sd">            y_test (array): Test labels.</span>
+<span class="sd">            model_name (str): Name of the model.</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">y_pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">precision_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s2">&quot;macro&quot;</span><span class="p">)</span>
+    <span class="n">recall</span> <span class="o">=</span> <span class="n">recall_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s2">&quot;macro&quot;</span><span class="p">)</span>
+    <span class="n">f1</span> <span class="o">=</span> <span class="n">f1_score</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">average</span><span class="o">=</span><span class="s2">&quot;macro&quot;</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> - Precision: </span><span class="si">{</span><span class="n">precision</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Recall: </span><span class="si">{</span><span class="n">recall</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, F1-score: </span><span class="si">{</span><span class="n">f1</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2"> Performance:</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">classification_report</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">))</span>
+    
+    <span class="n">conf_matrix</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+    <span class="n">sns</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span><span class="n">conf_matrix</span><span class="p">,</span> <span class="n">annot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">&quot;Blues&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;Predicted&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Actual&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Confusion Matrix - </span><span class="si">{</span><span class="n">model_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../modules.html#assignmentII.main">[docs]</a>
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Orchestrate the workflow by calling the necessary functions.&#39;&#39;&#39;</span>
+    
+    <span class="n">train_df</span><span class="p">,</span> <span class="n">test_df</span> <span class="o">=</span> <span class="n">load_and_preprocess_data</span><span class="p">()</span>
+    
+    <span class="n">X_train</span><span class="p">,</span> <span class="n">X_test</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">train_df</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="n">test_df</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="n">train_df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">],</span> <span class="n">test_df</span><span class="p">[</span><span class="s2">&quot;label&quot;</span><span class="p">]</span>
+    <span class="n">X_train</span><span class="p">,</span> <span class="n">X_dev</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_dev</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+    
+    <span class="n">vectorizer</span><span class="p">,</span> <span class="n">X_train_vectorized</span><span class="p">,</span> <span class="n">X_dev_vectorized</span><span class="p">,</span> <span class="n">X_test_vectorized</span> <span class="o">=</span> <span class="n">vectorize_data</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_dev</span><span class="p">,</span> <span class="n">X_test</span><span class="p">)</span>
+    
+    <span class="n">log_reg</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s2">&quot;lbfgs&quot;</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">),</span> <span class="n">X_train_vectorized</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+    <span class="n">svm_model</span> <span class="o">=</span> <span class="n">train_model</span><span class="p">(</span><span class="n">SVC</span><span class="p">(</span><span class="n">kernel</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">C</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span> <span class="n">X_train_vectorized</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+    
+    <span class="n">evaluate_model</span><span class="p">(</span><span class="n">log_reg</span><span class="p">,</span> <span class="n">X_dev_vectorized</span><span class="p">,</span> <span class="n">y_dev</span><span class="p">,</span> <span class="s2">&quot;Logistic Regression&quot;</span><span class="p">)</span>
+    <span class="n">evaluate_model</span><span class="p">(</span><span class="n">svm_model</span><span class="p">,</span> <span class="n">X_dev_vectorized</span><span class="p">,</span> <span class="n">y_dev</span><span class="p">,</span> <span class="s2">&quot;SVM&quot;</span><span class="p">)</span>
+    
+    <span class="n">evaluate_model</span><span class="p">(</span><span class="n">log_reg</span><span class="p">,</span> <span class="n">X_test_vectorized</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="s2">&quot;Logistic Regression&quot;</span><span class="p">)</span>
+    <span class="n">evaluate_model</span><span class="p">(</span><span class="n">svm_model</span><span class="p">,</span> <span class="n">X_test_vectorized</span><span class="p">,</span> <span class="n">y_test</span><span class="p">,</span> <span class="s2">&quot;SVM&quot;</span><span class="p">)</span>
+    
+    <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">AssignmentII_MachineLearning</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">AssignmentIIMachineLearning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html#my-module-documentation">My Module Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../assignmentII.html">assignmentII module</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Zohreh Samimi.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 7.3.5</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

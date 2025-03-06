@@ -9,11 +9,9 @@ Welcome to AssignmentII_MachineLearning's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-      
-modules
 
+   modules 
    assignmentII
-
 
 Indices and tables
 ==================
@@ -21,3 +19,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+

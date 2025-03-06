@@ -1,4 +1,4 @@
-"""
+'''
 
 DBPedia_14 Text Classification Project
 
@@ -20,7 +20,7 @@ Dependencies:
 - datasets
 - matplotlib
 - seaborn
-"""
+'''
 
 import numpy as np
 import pandas as pd
@@ -36,12 +36,12 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix
 
 def load_and_preprocess_data():
-    """
+    '''
     Load the DBPedia_14 dataset and preprocess it.
 
     Returns:
         tuple: Train and test datasets as pandas DataFrames.
-    """
+    '''
     dataset = load_dataset("dbpedia_14")
     train_ds = dataset["train"].shuffle(seed=42).select(range(5000))
     test_ds = dataset["test"].shuffle(seed=42).select(range(2000))
@@ -54,7 +54,7 @@ def load_and_preprocess_data():
     return train_df, test_df
 
 def vectorize_data(X_train, X_dev, X_test):
-    """
+    '''
     Convert text data into numerical feature vectors using TF-IDF.
         Args:
             X_train (list): Training data.
@@ -62,7 +62,7 @@ def vectorize_data(X_train, X_dev, X_test):
             X_test (list): Test data.
         Returns:
             tuple: TF-IDF vectorizer and vectorized data for training, development, and test sets.
-    """
+    '''
     vectorizer = TfidfVectorizer(max_features=3000)
     X_train_vectorized = vectorizer.fit_transform(X_train)
     X_dev_vectorized = vectorizer.transform(X_dev)
@@ -70,25 +70,25 @@ def vectorize_data(X_train, X_dev, X_test):
     return vectorizer, X_train_vectorized, X_dev_vectorized, X_test_vectorized
 
 def train_model(model, X_train, y_train):
-    """Train a given classification model.
+    '''Train a given classification model.
         Args:
             model: Classification model.
             X_train (array): Training data.
             y_train (array): Training labels.
         Returns:
             model: Trained model.
-    """
+    '''
     model.fit(X_train, y_train)
     return model
 
 def evaluate_model(model, X_test, y_test, model_name):
-    """ Evaluate a trained model using classification metrics and confusion matrix.
+    ''' Evaluate a trained model using classification metrics and confusion matrix.
         Args:
             model: Trained model.
             X_test (array): Test data.
             y_test (array): Test labels.
             model_name (str): Name of the model.
-    """
+    '''
     y_pred = model.predict(X_test)
     precision = precision_score(y_test, y_pred, average="macro")
     recall = recall_score(y_test, y_pred, average="macro")
@@ -106,7 +106,7 @@ def evaluate_model(model, X_test, y_test, model_name):
     plt.show()
 
 def main():
-    """Orchestrate the workflow by calling the necessary functions."""
+    '''Orchestrate the workflow by calling the necessary functions.'''
     
     train_df, test_df = load_and_preprocess_data()
     
